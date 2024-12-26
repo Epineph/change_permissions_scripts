@@ -107,7 +107,7 @@ Example Markdown Table:
 | `--noconfirm`       | Skip confirmation prompts.                                                 |
 | `--version`         | Display version information.                                               |
 | `--help`        
-| `--dry-drun`        | No changes made, but simulates changes showing what changes would be made  |
+| `--dry-run`        | No changes made, but simulates changes showing what changes would be made  |
 
 
 
