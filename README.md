@@ -106,7 +106,8 @@ Example Markdown Table:
 | `-a, --active-perms` | Show current permissions (numeric and symbolic).                          |
 | `--noconfirm`       | Skip confirmation prompts.                                                 |
 | `--version`         | Display version information.                                               |
-| `--help`            | Display this help text.                                                   |
+| `--help`        
+| `--dry-drun`        | No changes made, but simulates changes showing what changes would be made  |
 
 
 
