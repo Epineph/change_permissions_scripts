@@ -20,7 +20,7 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<YourGitHubUsername>/chPerms5.git
+   git clone https://github.com/Epineph/change_permissions_scripts.git
    ```
 
 ## Usage
