@@ -31,19 +31,19 @@ chPerms5 [PATH] [OPTIONS]...
 # Examples:
 
 # Show current ownership and permissions:
-chPerms5 ~/example/file.txt
+changePermissions ~/example/file.txt
 
 # Specify target with --target:
-chPerms5 -t ~/example/file.txt
+changePermissions -t ~/example/file.txt
 
 # Recursively change ownership to 'user', group to 'root', and permissions to 755:
-sudo chPerms5 -t ~/example/dir -o user -g root -p 755 -R
+sudo changePermissions -t ~/example/dir -o user -g root -p 755 -R
 
 # Change permissions using symbolic format:
-sudo chPerms5 -t ~/example/file.txt -p u=rwx,g=rx,o=rx
+sudo changePermissions -t ~/example/file.txt -p u=rwx,g=rx,o=rx
 
 # Only show current permissions:
-chPerms5 ~/example/file.txt --active-perms
+changePermissions ~/example/file.txt --active-perms
 ```
 
 # Example
@@ -51,29 +51,29 @@ chPerms5 ~/example/file.txt --active-perms
 - Show current ownership and permissions:
 
 ```bash
-chPerms5 [PATH] [OPTIONS]...
+changePermissions [PATH] [OPTIONS]...
 ```
 # Examples:
 
 # Show current ownership and permissions:
 ```bash
-chPerms5 ~/example/file.txt
+changePermissions ~/example/file.txt
 ```
 # Specify target with --target:
 ```bash
-chPerms5 -t ~/example/file.txt
+changePermissions -t ~/example/file.txt
 ```
 # Recursively change ownership to 'user', group to 'root', and permissions to 755:
 ```bash
-sudo chPerms5 -t ~/example/dir -o user -g root -p 755 -R
+sudo changePermissions -t ~/example/dir -o user -g root -p 755 -R
 ```
 # Change permissions using symbolic format:
 ```bash
-sudo chPerms5 -t ~/example/file.txt -p u=rwx,g=rx,o=rx
+sudo changePermissions -t ~/example/file.txt -p u=rwx,g=rx,o=rx
 ```
 # Only show current permissions:
 ```bash
-chPerms5 ~/example/file.txt --active-perms
+changePermissions ~/example/file.txt --active-perms
 ```
 Options
 Option	Description
