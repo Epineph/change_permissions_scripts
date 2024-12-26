@@ -90,7 +90,7 @@ PATH	The file or directory to act upon (positional argument).
 --help	Display this help text.
 
 
-```bash
+
 
 Example Markdown Table:
 
@@ -108,7 +108,7 @@ Example Markdown Table:
 | `--version`         | Display version information.                                               |
 | `--help`            | Display this help text.                                                   |
 
-```
+
 
 
 
