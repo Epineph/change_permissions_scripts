@@ -1,0 +1,390 @@
+#!/usr/bin/env bash
+
+##############################################################################
+# chPerms: A script to view and modify ownership and permissions of files
+#          and directories, with flexible options and a user-friendly design.
+#
+# Version: 1.1.0
+# Author:  <Your Name or GitHub Handle>
+# License: MIT or your preferred license
+##############################################################################
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [PATH] [OPTIONS]...
+
+Change ownership and/or permissions of a file or directory.
+
+Arguments:
+  PATH                The file or directory to act upon (positional).
+                      Alternatively, you can use -t/--target <DIR>.
+
+Options:
+  -t, --target <DIR>  Specify the path as an option (instead of using PATH).
+
+  -R, --recursive
+      --recursively-apply
+      --recurse-action
+      --force-recursively
+      --recursively-force
+                      Apply changes recursively. Prompts for confirmation unless
+                      --noconfirm or --force is used.
+
+  -o, --owner <USER>  Change the owner to <USER>. You can also use "user:group"
+                      in one go (e.g., "root:staff"). If <USER> is "activeuser",
+                      it sets the owner to the current user (id -un).
+
+  -g, --group <GROUP> Change only the group to <GROUP>.
+
+  -p, --perm <PERMS>
+      --permission, permissions, etc.
+                      Set permissions in numeric (e.g., 755), 9-char symbolic
+                      (e.g., rwxr-xr-x), or extended symbolic (u=rwx,g=rx,o=rx).
+
+  -c, --current-owner
+      currentowner, currentownership
+                      Show current owner/group of the target.
+
+  -a, --active-perms
+      --active-permissions
+      currentperms
+                      Show current permissions (symbolic + numeric).
+
+  --noconfirm         Bypass any confirmation prompt (answer 'yes' automatically).
+
+  --version           Show version information and exit.
+  --help              Display this help text and exit.
+
+Examples:
+  # Show current ownership and permissions:
+    $(basename "$0") /path/to/file
+
+  # Using -t to specify the target:
+    $(basename "$0") -t /path/to/file
+
+  # Recursively set permissions to 755, then change owner, then group:
+    sudo $(basename "$0") /path/to/dir --perm 755 --owner heini -g root -R
+
+  # Owner + group in one shot:
+    sudo $(basename "$0") -t /path/to/dir -o root:staff -p u=rwx,g=rx,o=rx
+
+  # Owner + group as separate options:
+    sudo $(basename "$0") /path/to/dir -o root -g staff -p 755
+EOF
+}
+
+##############################################################################
+#  GLOBAL VARIABLES
+##############################################################################
+TARGET=""
+RECURSIVE=false
+FORCE=false
+NOCONFIRM=false
+OPERATIONS=()
+
+##############################################################################
+#  HELPER FUNCTIONS
+##############################################################################
+
+confirm_recursive() {
+    if ! $NOCONFIRM && ! $FORCE; then
+        echo "You have requested a recursive operation. This may modify a large"
+        echo "number of files and can break your system if used improperly."
+        read -rp "Are you sure you want to continue? [y/N]: " response
+        if [[ "$response" != "y" && "$response" != "Y" ]]; then
+            echo "Operation cancelled."
+            exit 1
+        fi
+    fi
+}
+
+display_ownership() {
+    local path="$1"
+    local owner group
+    owner=$(stat -c %U "$path" 2>/dev/null)
+    group=$(stat -c %G "$path" 2>/dev/null)
+    echo "Current ownership of '$path':"
+    echo "  Owner: $owner"
+    echo "  Group: $group"
+}
+
+display_permissions() {
+    local path="$1"
+    local symbolic numeric user_perms group_perms others_perms
+    symbolic=$(stat -c %A "$path" 2>/dev/null)
+    numeric=$(stat -c %a "$path" 2>/dev/null)
+    echo "Current permissions of '$path':"
+    echo "  Symbolic: $symbolic"
+    echo "  Numeric: $numeric"
+    user_perms=$(echo "$symbolic" | cut -c2-4)
+    group_perms=$(echo "$symbolic" | cut -c5-7)
+    others_perms=$(echo "$symbolic" | cut -c8-10)
+    echo "  Detailed: u=$user_perms, g=$group_perms, o=$others_perms"
+}
+
+calculate_numeric_perm() {
+    local perm_str="$1"
+    local -n out_ref="$2"
+    local -i value=0
+
+    [[ "$perm_str" == *r* ]] && ((value += 4))
+    [[ "$perm_str" == *w* ]] && ((value += 2))
+    [[ "$perm_str" == *x* ]] && ((value += 1))
+
+    out_ref=$value
+}
+
+apply_permissions() {
+    local path="$1"
+    local perms="$2"
+    local rec_option="$3"
+
+    # Numeric (e.g., 755)
+    if [[ "$perms" =~ ^[0-7]{3}$ ]]; then
+        echo "Setting permissions of '$path' to '$perms'..."
+        chmod "$rec_option" "$perms" "$path"
+
+    # 9-character symbolic (e.g., rwxr-xr-x)
+    elif [[ "$perms" =~ ^[rwx-]{9}$ ]]; then
+        local u g o
+        calculate_numeric_perm "${perms:0:3}" u
+        calculate_numeric_perm "${perms:3:3}" g
+        calculate_numeric_perm "${perms:6:3}" o
+        local octal=$((u*64 + g*8 + o))
+        local octal_str
+        octal_str=$(printf '%o' "$octal")
+        echo "Setting permissions of '$path' to '$perms' (= $octal_str)..."
+        chmod "$rec_option" "$octal_str" "$path"
+
+    # Extended symbolic (e.g., u=rwx,g=rx,o=rx)
+    elif [[ "$perms" =~ ^u=([rwx-]{1,3}),g=([rwx-]{1,3}),o=([rwx-]{1,3})$ ]]; then
+        local u g o
+        calculate_numeric_perm "${BASH_REMATCH[1]}" u
+        calculate_numeric_perm "${BASH_REMATCH[2]}" g
+        calculate_numeric_perm "${BASH_REMATCH[3]}" o
+        local octal=$((u*64 + g*8 + o))
+        local octal_str
+        octal_str=$(printf '%o' "$octal")
+        echo "Setting permissions of '$path' to '$perms' (= $octal_str)..."
+        chmod "$rec_option" "$octal_str" "$path"
+
+    else
+        echo "Error: Invalid permissions format '$perms'."
+        exit 1
+    fi
+
+    echo "Permissions change applied."
+    display_permissions "$path"
+}
+
+##############################################################################
+#  ARGUMENT PARSING
+##############################################################################
+POS_ARG_PROVIDED=false
+TARGET_ARG_PROVIDED=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help)
+            show_help
+            exit 0
+            ;;
+        --version)
+            echo "$(basename "$0") version 1.1.0"
+            exit 0
+            ;;
+        -R|--recursive|--recursively-apply|--recurse-action|--force-recursively|--recursively-force)
+            RECURSIVE=true
+            if [[ "$1" == "--force-recursively" || "$1" == "--recursively-force" ]]; then
+                FORCE=true
+            fi
+            shift
+            ;;
+        --noconfirm)
+            NOCONFIRM=true
+            shift
+            ;;
+        -c|--current-owner|currentowner|currentownership)
+            OPERATIONS+=("SHOW_OWNER")
+            shift
+            ;;
+        -a|--active-perms|--active-permissions|currentperms)
+            OPERATIONS+=("SHOW_PERMS")
+            shift
+            ;;
+        -o|--owner|ownership|owner)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: Missing argument for $1."
+                show_help
+                exit 1
+            fi
+            OPERATIONS+=("OWNER:$2")
+            shift 2
+            ;;
+        -g|--group)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: Missing argument for $1."
+                show_help
+                exit 1
+            fi
+            OPERATIONS+=("GROUP:$2")
+            shift 2
+            ;;
+        -p|--perm|--perms|--permission|permissions|perms|perm)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: Missing argument for $1."
+                show_help
+                exit 1
+            fi
+            OPERATIONS+=("PERM:$2")
+            shift 2
+            ;;
+        -t|--target)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: Missing argument for $1."
+                show_help
+                exit 1
+            fi
+            if [[ -n "$TARGET" ]]; then
+                # If a positional argument was already set, or if we set TARGET previously
+                echo "Error: Cannot mix positional path with '-t/--target' argument."
+                exit 1
+            fi
+            TARGET="$2"
+            TARGET_ARG_PROVIDED=true
+            shift 2
+            ;;
+        -*)
+            echo "Error: Unknown option '$1'."
+            show_help
+            exit 1
+            ;;
+        *)
+            # If it's not an option, it's a PATH (positional argument)
+            if $TARGET_ARG_PROVIDED; then
+                # Already used -t or --target
+                echo "Error: Cannot mix positional path with '-t/--target' argument."
+                exit 1
+            fi
+            if $POS_ARG_PROVIDED; then
+                # Already found a positional argument
+                echo "Error: Multiple paths provided. Only one is supported."
+                show_help
+                exit 1
+            fi
+            TARGET="$1"
+            POS_ARG_PROVIDED=true
+            shift
+            ;;
+    esac
+done
+
+##############################################################################
+#  HANDLE MISSING TARGET
+##############################################################################
+if [[ -z "$TARGET" ]]; then
+    echo "No path was provided (neither positional nor -t/--target)."
+    read -rp "Do you want to operate on the current directory ($(pwd))? [y/N]: " choice
+    if [[ "$choice" =~ ^[Yy]$ ]]; then
+        TARGET="$(pwd)"
+    else
+        echo "No target specified; operation cancelled."
+        exit 1
+    fi
+fi
+
+# Validate path existence
+if [[ ! -e "$TARGET" ]]; then
+    echo "Error: The path '$TARGET' does not exist."
+    exit 1
+fi
+
+##############################################################################
+#  SUDO CHECK
+##############################################################################
+requires_sudo=false
+for op in "${OPERATIONS[@]}"; do
+    case "$op" in
+        OWNER:*|GROUP:*)
+            requires_sudo=true
+            break
+            ;;
+    esac
+done
+
+if $requires_sudo && [[ $EUID -ne 0 ]]; then
+    echo "Some operations (changing owner/group) require elevated permissions (sudo)."
+    read -rp "Do you want to rerun the script with sudo? [y/N]: " response
+    if [[ "$response" == [Yy] ]]; then
+        sudo bash "$0" "$@"
+        exit $?
+    else
+        echo "Proceeding without sudo. Some operations may fail due to insufficient permissions."
+    fi
+fi
+
+##############################################################################
+#  MAIN OPERATIONS
+##############################################################################
+if $RECURSIVE; then
+    confirm_recursive
+fi
+
+# If no operations are specified, show ownership & perms
+if [[ ${#OPERATIONS[@]} -eq 0 ]]; then
+    echo "No specific operation requested. Displaying ownership and permissions for: '$TARGET'"
+    display_ownership "$TARGET"
+    display_permissions "$TARGET"
+    exit 0
+fi
+
+# Apply operations in the order they were specified
+for op in "${OPERATIONS[@]}"; do
+    case "$op" in
+        "SHOW_OWNER")
+            display_ownership "$TARGET"
+            ;;
+        "SHOW_PERMS")
+            display_permissions "$TARGET"
+            ;;
+        OWNER:*)
+            owner_value="${op#OWNER:}"
+            [[ "$owner_value" == "activeuser" ]] && owner_value=$(id -un)
+            if [[ "$owner_value" =~ ^([^:]+):([^:]+)$ ]]; then
+                user="${BASH_REMATCH[1]}"
+                group="${BASH_REMATCH[2]}"
+                echo "Changing ownership of '$TARGET' to '$user:$group'..."
+                chown "${RECURSIVE:+-R}" "$user:$group" "$TARGET"
+                if [[ $? -eq 0 ]]; then
+                    echo "Ownership changed to '$user:$group'."
+                else
+                    echo "Error: Failed to change ownership to '$user:$group'."
+                fi
+            else
+                echo "Changing owner of '$TARGET' to '$owner_value'..."
+                chown "${RECURSIVE:+-R}" "$owner_value" "$TARGET"
+                if [[ $? -eq 0 ]]; then
+                    echo "Owner changed to '$owner_value'."
+                else
+                    echo "Error: Failed to change owner to '$owner_value'."
+                fi
+            fi
+            display_ownership "$TARGET"
+            ;;
+        GROUP:*)
+            group_value="${op#GROUP:}"
+            echo "Changing group of '$TARGET' to '$group_value'..."
+            chown "${RECURSIVE:+-R}" ":$group_value" "$TARGET"
+            if [[ $? -eq 0 ]]; then
+                echo "Group changed to '$group_value'."
+            else
+                echo "Error: Failed to change group to '$group_value'. (Is '$group_value' a valid group?)"
+            fi
+            display_ownership "$TARGET"
+            ;;
+        PERM:*)
+            perm_value="${op#PERM:}"
+            apply_permissions "$TARGET" "$perm_value" "${RECURSIVE:+-R}"
+            ;;
+    esac
+done
