@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 ##############################################################################
-# chPerms8: A script to view and modify ownership & permissions of files/
+# changePermissions: A script to view and modify ownership & permissions of files/
 #           directories, supporting multiple targets, dry-run, and now a
 #           "--refresh-rc" option to source the user's shell RC file.
 #
 # Version: 1.4.0
-# Author:  <Your Name or GitHub Handle>
+# Author:  <Epineph>
 # License: MIT
 ##############################################################################
 
