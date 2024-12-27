@@ -1,6 +1,6 @@
-# change_permissions_scripts
+# User-friendly script to change permissions (9-charachter-symbolic (e.g., rwxr-xr-x), extended symbolic (u=rwx,g=r-x,o=r-x), octal (755), group, owner for single files, folders (and recursivelyy) and allows for --dry-runs if you want to check what the current operation will do without applying it.
 
-# chPerms
+## Description
 
 **chPerms** is a command-line utility for managing file and directory ownership and permissions on Linux systems. It simplifies and streamlines operations like `chown` and `chmod` by combining them with flexible options and user-friendly feedback.
 
@@ -26,9 +26,11 @@
 ## Usage
 
 ```bash
-chPerms5 [PATH] [OPTIONS]...
+changePermissions [PATH] [OPTIONS]...
 
-# Examples:
+First sudo chmod +x "$(pwd)"/changePermissions
+
+# Examples - run the examplles below with ./changePermissions or place it so found on $PATH and simply call it be name:
 
 # Show current ownership and permissions:
 changePermissions ~/example/file.txt
