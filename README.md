@@ -40,8 +40,11 @@ changePermissions ~/example/file.txt
 # Specify target with --target:
 changePermissions -t ~/example/file.txt
 
+# Specify target list with --target, paths being either space- or comma-separated:
+changePermissions -t ~/example/file.txt ~/example2/file.txt ~/example3/file.txt
+
 # Recursively change ownership to 'user', group to 'root', and permissions to 755:
-sudo changePermissions -t ~/example/dir -o user -g root -p 755 -R
+sudo changePermissions -t ~/example/dir,~/example2/dir -o user -g root -p 755 -R
 
 # Change permissions using symbolic format:
 sudo changePermissions -t ~/example/file.txt -p u=rwx,g=rx,o=rx
