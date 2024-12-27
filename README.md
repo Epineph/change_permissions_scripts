@@ -1,8 +1,10 @@
-# User-friendly script to change permissions (9-charachter-symbolic (e.g., rwxr-xr-x), extended symbolic (u=rwx,g=r-x,o=r-x), octal (755), group, owner for single files, folders (and recursivelyy) and allows for --dry-runs if you want to check what the current operation will do without applying it.
+# User-friendly script to change permissions 
 
 ## Description
 
-**chPerms** is a command-line utility for managing file and directory ownership and permissions on Linux systems. It simplifies and streamlines operations like `chown` and `chmod` by combining them with flexible options and user-friendly feedback.
+The script allows for **9-charachter-symbolic** (e.g., `rwxr-xr-x`), **extended symbolic** (`u=rwx,g=r-x,o=r-x`), **octal permissions** (`755`), `--group | -g` argument, `-o | --owner` argument for single files, folders (and optionally with `--recursive`, but user will be prompted unless `--noconfirm` is supplied) and allows for `--dry-runs` if you want to check what the current operation will do without applying it. If run with no arguments other than path, the script will simply show the current permissions, owner, group and other relevant info for that directory or file.
+
+**changePermissions** is a command-line utility for managing file and directory ownership and permissions on Linux systems. It simplifies and streamlines operations like `chown` and `chmod` by combining them with flexible options and user-friendly feedback, plus some additional functionality.
 
 ## Features
 
