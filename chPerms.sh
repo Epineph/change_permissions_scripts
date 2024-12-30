@@ -5,7 +5,7 @@
 #           directories, supporting multiple targets, dry-run, and now a
 #           "--refresh-rc" option to source the user's shell RC file.
 #
-# Version: 1.4.0
+# Version: 1.5.0
 # Author:  Heini Winther Johnsen
 # License: MIT
 ##############################################################################
